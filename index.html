@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>주간 To-Do 플래너</title>
+  <style>
+    :root{
+      --bg1:#0ea5e9;
+      --bg2:#8b5cf6;
+      --card:#0b1020cc;
+      --card2:#0b1020a6;
+      --line:#ffffff1f;
+      --text:#eef2ff;
+      --muted:#c7d2fecc;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 22px 14px;
+      background:
+        radial-gradient(1200px 600px at 20% 10%, rgba(255,255,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 85% 30%, rgba(255,255,255,.14), transparent 55%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+    .shell{ width:min(1100px, 100%); margin: 0 auto; }
+
+    .header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    h1{
+      margin:0;
+      font-size: 22px;
+      letter-spacing:-0.02em;
+      line-height: 1.15;
+    }
+    .subtitle{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .toolbar{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.10);
+      color: rgba(238,242,255,.94);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .12s ease, background .12s ease, filter .12s ease;
+      white-space: nowrap;
+      backdrop-filter: blur(12px);
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.13); }
+    .btn:active{ transform: translateY(0px); }
+    .btn.primary{
+      border: 0;
+      background: linear-gradient(135deg, #fbbf24, #fb7185);
+      color: #0b1020;
+      box-shadow: 0 12px 26px rgba(251,113,133,.22);
+    }
+
+    .card{
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid rgba(255,255,255,.15);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+    }
+
+    .top{
+      padding: 14px 16px 12px 16px;
+      border-bottom: 1px solid var(--line);
+      display:flex;
+      gap: 12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap: wrap;
+    }
+    .weekLabel{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .weekLabel .range{
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .weekLabel .meta{
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+
+    .progressWrap{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      min-width: 280px;
+    }
+    .bar{
+      flex:1;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.14);
+      overflow:hidden;
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(135deg, #22c55e, #06b6d4);
+      transition: width .2s ease;
+    }
+    .pct{
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(238,242,255,.95);
+      min-width: 58px;
+      text-align:right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .settings{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .toggle{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      white-space: nowrap;
+    }
+    input[type="checkbox"]{ accent-color: #22c55e; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      padding: 12px;
+    }
+    @media (max-width: 1100px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .day{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      border-radius: 16px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height: 260px;
+    }
+    .dayHead{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .dayName{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+    }
+    .dayName .dow{
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .dayName .date{
+      font-size: 12px;
+      color: rgba(199,210,254,.85);
+    }
+    .pill{
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.10);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .addRow{
+      padding: 10px 12px;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+    .addRow input{
+      flex:1;
+      min-width: 0;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 10px;
+      outline: none;
+      caret-color: #ffffff;
+      font-size: 13px;
+    }
+    .addRow input::placeholder{ color: rgba(238,242,255,.55); }
+    .miniBtn{
+      border:0;
+      cursor:pointer;
+      padding: 10px 10px;
+      border-radius: 12px;
+      font-weight: 900;
+      color: #0b1020;
+      background: linear-gradient(135deg, #38bdf8, #a78bfa);
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+      min-width: 48px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .miniBtn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+    .miniBtn:active{ transform: translateY(0px); }
+    .miniBtn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+
+    ul{ list-style:none; padding: 0; margin: 0; }
+    .list{
+      padding: 0 10px 10px 10px;
+      overflow:auto;
+      flex:1;
+    }
+
+    .item{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      padding: 10px 10px;
+      border-radius: 14px;
+      transition: background .12s ease, transform .12s ease;
+    }
+    .item:hover{
+      background: rgba(255,255,255,.06);
+      transform: translateY(-1px);
+    }
+
+    /* ✅ 요청 반영: "가로 한 줄 + 말줄임(...)" */
+    .txt{
+      flex: 1 1 auto;
+      min-width: 0;              /* flex에서 말줄임 필수 */
+      font-size: 13px;
+      line-height: 1.35;
+      color: rgba(238,242,255,.94);
+
+      white-space: nowrap;       /* 한 줄 고정 */
+      overflow: hidden;          /* 넘치면 숨김 */
+      text-overflow: ellipsis;   /* 말줄임(...) */
+      word-break: keep-all;      /* 한글 글자 쪼개짐 방지 */
+    }
+
+    .done .txt{
+      text-decoration: line-through;
+      opacity: .65;
+    }
+
+    .actions{
+      flex: 0 0 auto;
+      display:flex;
+      gap: 6px;
+      align-items:center;
+    }
+    .iconBtn{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(238,242,255,.9);
+      border-radius: 10px;
+      padding: 6px 8px;
+      cursor:pointer;
+      font-weight: 900;
+      font-size: 12px;
+      transition: transform .12s ease, background .12s ease;
+      white-space: nowrap;
+    }
+    .iconBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
+    .iconBtn.danger{ border-color: rgba(251,113,133,.35); }
+
+    .foot{
+      padding: 12px 16px 14px 16px;
+      border-top: 1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: rgba(199,210,254,.85);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <div class="header">
+      <div class="title">
+        <h1>주간 To-Do 플래너</h1>
+        <p class="subtitle">주간 계획을 세우고, 실행 여부를 체크해 주간 실행률을 확인하세요.</p>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn" id="prevWeekBtn" type="button">◀ 이전 주</button>
+        <button class="btn" id="thisWeekBtn" type="button">이번 주</button>
+        <button class="btn" id="nextWeekBtn" type="button">다음 주 ▶</button>
+        <button class="btn primary" id="resetWeekBtn" type="button">이 주차 전체 삭제</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="weekLabel">
+          <div class="range" id="weekRange"></div>
+          <div class="meta">
+            <span id="weekKey"></span>
+            <span class="settings">
+              <span class="toggle">
+                <input id="hideDoneToggle" type="checkbox" />
+                <label for="hideDoneToggle">완료 항목 숨김(체크하면 사라짐)</label>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div class="progressWrap">
+          <div class="bar"><div class="fill" id="fill"></div></div>
+          <div class="pct" id="pct">0%</div>
+        </div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+      <div class="foot">
+        <span>팁: “완료 항목 숨김”을 켜면, 체크하는 즉시 화면에서 사라집니다(데이터는 완료로 저장됨).</span>
+        <span>저장: 브라우저(LocalStorage) · 주차별로 자동 분리 저장</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------- 날짜/주차 유틸 (ISO week: 월요일 시작) --------
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    function startOfISOWeek(date){
+      const d = new Date(date);
+      d.setHours(0,0,0,0);
+      const day = d.getDay(); // 0=Sun..6=Sat
+      const diff = (day === 0 ? -6 : 1) - day; // 월요일로 이동
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+
+    function addDays(date, days){
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function isoWeekYear(date){
+      const d = new Date(date);
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + 3 - (d.getDay() === 0 ? 7 : d.getDay()));
+      return d.getFullYear();
+    }
+
+    function isoWeekNumber(date){
+      const d = new Date(date);
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + 3 - (d.getDay() === 0 ? 7 : d.getDay()));
+      const week1 = new Date(d.getFullYear(), 0, 4);
+      return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() === 0 ? 7 : week1.getDay())) / 7);
+    }
+
+    function weekKeyFor(date){
+      const wy = isoWeekYear(date);
+      const wn = isoWeekNumber(date);
+      return `week_${wy}-W${pad2(wn)}`;
+    }
+
+    function formatYMD(d){
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    }
+
+    function formatKorean(d){
+      const w = ["일","월","화","수","목","금","토"][d.getDay()];
+      return `${d.getMonth()+1}/${d.getDate()}(${w})`;
+    }
+
+    // -------- 저장 구조 --------
+    // storageKey: week_YYYY-Www
+    // value: { days: { 'YYYY-MM-DD': [ {id,text,done,tsDone?} ] }, ui: { hideDone: boolean } }
+    function loadWeek(key){
+      try{
+        const raw = localStorage.getItem(key);
+        if(!raw) return { days:{}, ui:{ hideDone:false } };
+        const parsed = JSON.parse(raw);
+        parsed.days = parsed.days || {};
+        parsed.ui = parsed.ui || { hideDone:false };
+        return parsed;
+      }catch{
+        return { days:{}, ui:{ hideDone:false } };
+      }
+    }
+
+    function saveWeek(key, data){
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function uid(){
+      return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
+    }
+
+    // -------- 앱 상태 --------
+    let anchorDate = new Date(); // 현재 보고 있는 주의 기준 날짜
+    let currentWeekStart = startOfISOWeek(anchorDate);
+    let currentKey = weekKeyFor(anchorDate);
+    let data = loadWeek(currentKey);
+
+    // -------- DOM --------
+    const grid = document.getElementById("grid");
+    const weekRange = document.getElementById("weekRange");
+    const weekKeyEl = document.getElementById("weekKey");
+    const fill = document.getElementById("fill");
+    const pct = document.getElementById("pct");
+    const hideDoneToggle = document.getElementById("hideDoneToggle");
+
+    document.getElementById("prevWeekBtn").addEventListener("click", () => moveWeek(-1));
+    document.getElementById("nextWeekBtn").addEventListener("click", () => moveWeek(1));
+    document.getElementById("thisWeekBtn").addEventListener("click", () => { anchorDate = new Date(); refreshWeek(); });
+    document.getElementById("resetWeekBtn").addEventListener("click", () => {
+      if(confirm("이 주차의 할 일을 모두 삭제할까요?")){
+        data = { days:{}, ui:{ hideDone: data.ui?.hideDone ?? false } };
+        saveWeek(currentKey, data);
+        render();
+      }
+    });
+
+    hideDoneToggle.addEventListener("change", () => {
+      data.ui.hideDone = hideDoneToggle.checked;
+      saveWeek(currentKey, data);
+      render();
+    });
+
+    function moveWeek(delta){
+      anchorDate = addDays(currentWeekStart, delta * 7);
+      refreshWeek();
+    }
+
+    function refreshWeek(){
+      currentWeekStart = startOfISOWeek(anchorDate);
+      currentKey = weekKeyFor(anchorDate);
+      data = loadWeek(currentKey);
+      render();
+    }
+
+    function getDayList(dateYMD){
+      if(!data.days[dateYMD]) data.days[dateYMD] = [];
+      return data.days[dateYMD];
+    }
+
+    function addTask(dateYMD, text){
+      const t = text.trim();
+      if(!t) return;
+      const list = getDayList(dateYMD);
+      list.unshift({ id: uid(), text: t, done: false, tsDone: null });
+      saveWeek(currentKey, data);
+      render();
+    }
+
+    function toggleDone(dateYMD, id){
+      const list = getDayList(dateYMD);
+      const item = list.find(x => x.id === id);
+      if(!item) return;
+      item.done = !item.done;
+      item.tsDone = item.done ? Date.now() : null;
+      saveWeek(currentKey, data);
+      render();
+    }
+
+    function removeTask(dateYMD, id){
+      const list = getDayList(dateYMD);
+      data.days[dateYMD] = list.filter(x => x.id !== id);
+      saveWeek(currentKey, data);
+      render();
+    }
+
+    function weekDates(){
+      const arr = [];
+      for(let i=0;i<7;i++) arr.push(addDays(currentWeekStart, i));
+      return arr;
+    }
+
+    function countsForWeek(){
+      let total = 0, done = 0;
+      const days = weekDates();
+      for(const d of days){
+        const ymd = formatYMD(d);
+        const list = getDayList(ymd);
+        total += list.length;
+        done += list.filter(x => x.done).length;
+      }
+      return { total, done };
+    }
+
+    function render(){
+      const start = currentWeekStart;
+      const end = addDays(currentWeekStart, 6);
+      weekRange.textContent = `${formatYMD(start)} ~ ${formatYMD(end)} (월~일)`;
+      weekKeyEl.textContent = currentKey.replace("week_","주차키: ");
+      hideDoneToggle.checked = !!data.ui.hideDone;
+
+      const c = countsForWeek();
+      const p = c.total === 0 ? 0 : Math.round((c.done / c.total) * 100);
+      fill.style.width = `${p}%`;
+      pct.textContent = `${p}%`;
+
+      grid.innerHTML = "";
+      const dows = ["월","화","수","목","금","토","일"];
+
+      weekDates().forEach((d, idx) => {
+        const ymd = formatYMD(d);
+        const list = getDayList(ymd);
+        const doneCnt = list.filter(x => x.done).length;
+        const totalCnt = list.length;
+
+        const day = document.createElement("div");
+        day.className = "day";
+
+        const head = document.createElement("div");
+        head.className = "dayHead";
+
+        const dayName = document.createElement("div");
+        dayName.className = "dayName";
+        dayName.innerHTML = `<div class="dow">${dows[idx]}요일</div><div class="date">${formatKorean(d)}</div>`;
+
+        const pill = document.createElement("div");
+        pill.className = "pill";
+        pill.textContent = `${doneCnt}/${totalCnt}`;
+
+        head.appendChild(dayName);
+        head.appendChild(pill);
+
+        const addRow = document.createElement("div");
+        addRow.className = "addRow";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.maxLength = 80;
+        input.placeholder = "할 일을 추가하세요";
+
+        const btn = document.createElement("button");
+        btn.className = "miniBtn";
+        btn.type = "button";
+        btn.textContent = "＋";
+        btn.disabled = true;
+
+        input.addEventListener("input", () => {
+          btn.disabled = input.value.trim().length === 0;
+        });
+
+        input.addEventListener("keydown", (e) => {
+          if(e.key === "Enter"){
+            addTask(ymd, input.value);
+            input.value = "";
+            btn.disabled = true;
+          }
+        });
+
+        btn.addEventListener("click", () => {
+          addTask(ymd, input.value);
+          input.value = "";
+          btn.disabled = true;
+          input.focus();
+        });
+
+        addRow.appendChild(input);
+        addRow.appendChild(btn);
+
+        const listWrap = document.createElement("div");
+        listWrap.className = "list";
+        const ul = document.createElement("ul");
+
+        const visible = data.ui.hideDone ? list.filter(x => !x.done) : list;
+
+        visible.forEach(item => {
+          const li = document.createElement("li");
+          li.className = "item" + (item.done ? " done" : "");
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = !!item.done;
+          cb.addEventListener("change", () => toggleDone(ymd, item.id));
+
+          const txt = document.createElement("div");
+          txt.className = "txt";
+          txt.title = item.text; // 말줄임 된 경우 전체 텍스트 툴팁
+          txt.textContent = item.text;
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const del = document.createElement("button");
+          del.className = "iconBtn danger";
+          del.type = "button";
+          del.textContent = "삭제";
+          del.addEventListener("click", () => removeTask(ymd, item.id));
+
+          actions.appendChild(del);
+
+          li.appendChild(cb);
+          li.appendChild(txt);
+          li.appendChild(actions);
+          ul.appendChild(li);
+        });
+
+        listWrap.appendChild(ul);
+
+        day.appendChild(head);
+        day.appendChild(addRow);
+        day.appendChild(listWrap);
+
+        grid.appendChild(day);
+      });
+    }
+
+    refreshWeek();
+  </script>
+</body>
+</html>
